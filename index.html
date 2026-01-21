@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fourier Trig Coefficient Visualizer</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 20px 64px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    header {
+      display: grid;
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      margin: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #cbd5f5;
+    }
+
+    .panel {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cols {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0b1220;
+      color: inherit;
+      font-size: 1rem;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+
+    .formula {
+      font-family: "Courier New", Courier, monospace;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      background: #0b1120;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #1e293b;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+      font-size: 0.95rem;
+      color: #cbd5f5;
+    }
+
+    .summary strong {
+      color: #f8fafc;
+    }
+
+    footer {
+      color: #64748b;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Fourier Trig Coefficient Visualizer</h1>
+      <p>Set the coefficients and toggle whether each term is zero or nonzero to see the resulting trigonometric Fourier series.</p>
+    </header>
+
+    <section class="panel grid">
+      <div class="grid cols">
+        <div>
+          <label for="a0">a₀ coefficient</label>
+          <input id="a0" type="number" value="2" step="0.1" />
+          <div class="toggle">
+            <span>Status</span>
+            <select id="a0Status">
+              <option value="nonzero" selected>Nonzero</option>
+              <option value="zero">Zero</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="an">aₙ coefficient</label>
+          <input id="an" type="number" value="1" step="0.1" />
+          <div class="toggle">
+            <span>Status</span>
+            <select id="anStatus">
+              <option value="nonzero" selected>Nonzero</option>
+              <option value="zero">Zero</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="bn">bₙ coefficient</label>
+          <input id="bn" type="number" value="0.5" step="0.1" />
+          <div class="toggle">
+            <span>Status</span>
+            <select id="bnStatus">
+              <option value="nonzero" selected>Nonzero</option>
+              <option value="zero">Zero</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="nValue">n value</label>
+          <input id="nValue" type="number" value="1" step="1" min="1" />
+          <div class="toggle">
+            <span>Use n in cos/sin terms</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="pill">Fourier series preview</div>
+      <div class="formula" id="formula"></div>
+      <div class="summary" id="summary"></div>
+    </section>
+
+    <footer>
+      Adjust the toggles to explore constant, cosine-only, sine-only, or full trig series forms.
+    </footer>
+  </main>
+
+  <script>
+    const a0Input = document.getElementById("a0");
+    const anInput = document.getElementById("an");
+    const bnInput = document.getElementById("bn");
+    const nInput = document.getElementById("nValue");
+    const a0Status = document.getElementById("a0Status");
+    const anStatus = document.getElementById("anStatus");
+    const bnStatus = document.getElementById("bnStatus");
+    const formula = document.getElementById("formula");
+    const summary = document.getElementById("summary");
+
+    function formatCoefficient(value) {
+      if (Number.isNaN(value)) {
+        return "0";
+      }
+      return value.toString();
+    }
+
+    function buildSeries() {
+      const a0Value = parseFloat(a0Input.value);
+      const anValue = parseFloat(anInput.value);
+      const bnValue = parseFloat(bnInput.value);
+      const nValue = Math.max(1, parseInt(nInput.value || "1", 10));
+
+      const terms = [];
+      const summaryItems = [];
+
+      if (a0Status.value === "nonzero") {
+        terms.push(`${formatCoefficient(a0Value)} / 2`);
+        summaryItems.push(`<div><strong>a₀ term:</strong> constant offset of ${formatCoefficient(a0Value)} / 2</div>`);
+      } else {
+        summaryItems.push("<div><strong>a₀ term:</strong> omitted (zero)</div>");
+      }
+
+      if (anStatus.value === "nonzero") {
+        terms.push(`${formatCoefficient(anValue)} cos(${nValue}x)`);
+        summaryItems.push(`<div><strong>aₙ term:</strong> cosine amplitude ${formatCoefficient(anValue)}</div>`);
+      } else {
+        summaryItems.push("<div><strong>aₙ term:</strong> omitted (zero)</div>");
+      }
+
+      if (bnStatus.value === "nonzero") {
+        terms.push(`${formatCoefficient(bnValue)} sin(${nValue}x)`);
+        summaryItems.push(`<div><strong>bₙ term:</strong> sine amplitude ${formatCoefficient(bnValue)}</div>`);
+      } else {
+        summaryItems.push("<div><strong>bₙ term:</strong> omitted (zero)</div>");
+      }
+
+      formula.textContent = terms.length ? `f(x) = ${terms.join(" + ")}` : "f(x) = 0";
+      summary.innerHTML = summaryItems.join("");
+    }
+
+    [a0Input, anInput, bnInput, nInput, a0Status, anStatus, bnStatus].forEach((element) => {
+      element.addEventListener("input", buildSeries);
+      element.addEventListener("change", buildSeries);
+    });
+
+    buildSeries();
+  </script>
+</body>
+</html>
